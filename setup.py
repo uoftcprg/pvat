@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='pvat',
-    version='0.0.0',
+    version='0.0.0.dev0',
     description=(
         'Python implementations of variance reduction techniques for'
         ' extensive-form games'
