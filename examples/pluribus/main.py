@@ -24,7 +24,6 @@ PHH_PATHS: tuple[Path, ...] = tuple(
         glob(str(PHH_DATASET_PATH / 'data' / 'pluribus' / '*' / '*.phh')),
     ),
 )
-PHH_COUNT: int = 10000
 BIG_BLIND_UNIT: int = 1000
 POST_FLOP_INPUT_FILE_PATH: Path = Path(__file__).parent / 'input.txt'
 POKERCMD_PATH: Path = Path(__file__).parent / 'pokercmd'
@@ -157,8 +156,6 @@ def load_hand_histories() -> tuple[HandHistory, ...]:
         hand_history.user_defined_fields['_dealable_cards'] = dealable_cards
 
         hand_histories.append(hand_history)
-
-    assert len(hand_histories) == PHH_COUNT
 
     return tuple(hand_histories)
 
@@ -472,7 +469,7 @@ def estimate(
 
     for hand_history, terminal_history in tqdm(
             zip(hand_histories, terminal_histories),
-            total=PHH_COUNT,
+            total=len(PHH_PATHS),
     ):
         finishing_stacks = (
             mivat(linear_value_function, terminal_history)
