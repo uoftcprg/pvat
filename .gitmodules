@@ -1,0 +1,9 @@
+[submodule "examples/pluribus/phh-dataset"]
+	path = examples/pluribus/phh-dataset
+	url = https://github.com/uoftcprg/phh-dataset.git
+[submodule "examples/pluribus/pokercmd"]
+	path = examples/pluribus/pokercmd
+	url = https://github.com/uoftcprg/pokercmd.git
+[submodule "examples/pluribus/psa-dataset"]
+	path = examples/pluribus/psa-dataset
+	url = https://github.com/uoftcprg/psa-dataset.git

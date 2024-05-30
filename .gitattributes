@@ -1,0 +1,2 @@
+examples/pluribus/input.txt filter=lfs diff=lfs merge=lfs -text
+examples/pluribus/output.txt filter=lfs diff=lfs merge=lfs -text
