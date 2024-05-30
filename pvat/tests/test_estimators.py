@@ -1,5 +1,5 @@
-""":mod:`pokerkit.tests.test_estimators` implements unit tests for
-the value estimators in PRiVaTe.
+""":mod:`pvat.tests.test_estimators` implements unit tests for the value
+estimators in PVAT.
 """
 
 from collections.abc import Iterator
@@ -9,7 +9,7 @@ from unittest import TestCase, main
 
 import numpy as np
 
-from private.estimators import ImportanceSampling
+from pvat.estimators import ImportanceSampling
 
 
 class RockPaperScissorsTestCase(TestCase):

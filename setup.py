@@ -3,7 +3,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='private',
+    name='pvat',
     version='0.0.0',
     description=(
         'Python implementations of variance reduction techniques for'
@@ -11,7 +11,7 @@ setup(
     ),
     long_description=open('README.rst').read(),
     long_description_content_type='text/x-rst',
-    url='https://github.com/uoftcprg/private',
+    url='https://github.com/uoftcprg/pvat',
     author='University of Toronto Computer Poker Student Research Group',
     author_email='uoftcprg@studentorg.utoronto.ca',
     license='MIT',
@@ -52,12 +52,12 @@ setup(
         'texas-holdem',
     ],
     project_urls={
-        'Documentation': 'https://private.readthedocs.io/en/latest/',
-        'Source': 'https://github.com/uoftcprg/private',
-        'Tracker': 'https://github.com/uoftcprg/private/issues',
+        'Documentation': 'https://pvat.readthedocs.io/en/latest/',
+        'Source': 'https://github.com/uoftcprg/pvat',
+        'Tracker': 'https://github.com/uoftcprg/pvat/issues',
     },
     packages=find_packages(),
     install_requires='numpy>=1.26.4,<2',
     python_requires='>=3.11',
-    package_data={'private': ['py.typed']},
+    package_data={'pvat': ['py.typed']},
 )

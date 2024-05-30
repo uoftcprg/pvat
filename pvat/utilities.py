@@ -1,4 +1,4 @@
-""":mod:`private.utilities` implements classes related to utilities."""
+""":mod:`pvat.utilities` implements classes related to utilities."""
 
 from __future__ import annotations
 

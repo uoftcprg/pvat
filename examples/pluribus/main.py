@@ -15,7 +15,7 @@ import numpy as np
 
 syspath.append(str(Path(__file__).parent.parent.parent))
 
-from private import MIVAT, LinearValueFunction  # noqa: E402
+from pvat import MIVAT, LinearValueFunction  # noqa: E402
 
 PHH_DATASET_PATH: Path = Path(__file__).parent / 'phh-dataset'
 PHH_PATHS: tuple[Path, ...] = tuple(

@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'PRiVaTe'
+project = 'PVAT'
 copyright = '2024, University of Toronto Computer Poker Student Research Group'
 author = 'University of Toronto Computer Poker Student Research Group'
 release = '0.0.0'

@@ -1,4 +1,4 @@
-""":mod:`private` is the top-level package for the PRiVaTe library.
+""":mod:`pvat` is the top-level package for the PVAT library.
 
 All public definitions are imported here.
 """
@@ -24,7 +24,7 @@ __all__ = (
     'weighted_average_map',
 )
 
-from private.estimators import (
+from pvat.estimators import (
     AdvantageSum,
     AIVAT,
     DIVAT,
@@ -32,7 +32,7 @@ from private.estimators import (
     MIVAT,
     ValueEstimator,
 )
-from private.utilities import (
+from pvat.utilities import (
     ActionsFunction,
     LinearValueFunction,
     MadeFunction,

@@ -1,4 +1,4 @@
-""":mod:`private.estimators` implements the value estimators."""
+""":mod:`pvat.estimators` implements the value estimators."""
 
 from abc import ABC, abstractmethod
 from collections.abc import Container, Iterable, Iterator
@@ -7,7 +7,7 @@ from functools import partial, singledispatchmethod
 from itertools import product, starmap
 from typing import Any, Generic, TypeVar
 
-from private.utilities import (
+from pvat.utilities import (
     ActionsFunction,
     LinearValueFunction,
     MadeFunction,

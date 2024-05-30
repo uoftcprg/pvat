@@ -2,13 +2,13 @@
 Contributing
 ============
 
-Thanks for considering contributing to PRiVaTe! Your contributions are greatly appreciated, and help make PRiVaTe a better tool for everyone in the Poker AI and research communities.
+Thanks for considering contributing to PVAT! Your contributions are greatly appreciated, and help make PVAT a better tool for everyone in the Poker AI and research communities.
 
 Setting up Your Development Environment
 ---------------------------------------
 
-1. Fork the PRiVaTe repository on GitHub.
-2. Clone your fork locally: ``git clone git@github.com:uoftcprg/private.git``
+1. Fork the PVAT repository on GitHub.
+2. Clone your fork locally: ``git clone git@github.com:uoftcprg/pvat.git``
 3. Setup virtual environment: ``python -m venv venv``
 4. Activate the virtual environment: ``source venv/bin/activate``
 5. Install requirements: ``pip install -r requirements.txt``
@@ -24,18 +24,18 @@ When making changes, please follow these guidelines:
 - Document your changes in the code and update the `README <README.rst>`_ file if necessary.
 - After making changes, please validate your changes.
 
-1. Run style checking: ``flake8 private``
-2. Run static type checking with ``--strict`` flag: ``mypy --strict private``
-3. Run checks for missing docstrings: ``interrogate -f 100 -i -m -n -p -s -r '^\w+TestCase' private``
+1. Run style checking: ``flake8 pvat``
+2. Run static type checking with ``--strict`` flag: ``mypy --strict pvat``
+3. Run checks for missing docstrings: ``interrogate -f 100 -i -m -n -p -s -r '^\w+TestCase' pvat``
 4. Run unit tests: ``python -m unittest``
-5. Run doctests: ``python -m doctest private/*.py``
+5. Run doctests: ``python -m doctest pvat/*.py``
 
 Submitting a Pull Request
 -------------------------
 
 1. Commit your changes: ``git commit -am 'Add some feature'``
 2. Push to the branch: ``git push origin branch-name``
-3. Submit a pull request to the ``main`` branch in the PRiVaTe repository.
+3. Submit a pull request to the ``main`` branch in the PVAT repository.
 
 Before submitting your pull request, please make sure the mypy static type checking with ``--strict`` flag, flake8, doctests, unit tests pass, and your code adheres to `PEP8 <https://peps.python.org/pep-0008/>`_.
 
