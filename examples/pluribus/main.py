@@ -69,7 +69,6 @@ FLOP_OUTPUT_FILE_PATH: Path = (
 )
 ZERO_SUM: bool = True
 PLURIBUS_NAME: str = 'Pluribus'
-DATA_PATH: Path = Path(__file__).parent / 'data'
 BASIC_ESTIMATE_NAME: str = 'Basic'
 MIVAT_ESTIMATE_NAME: str = 'MIVAT w/ Linear Value Function'
 AIVAT_ESTIMATE_NAME: str = 'AIVAT (Brown and Sandholm)'
