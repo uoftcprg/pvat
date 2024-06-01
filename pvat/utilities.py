@@ -95,8 +95,8 @@ class LinearValueFunction(ValueFunction[_H_contra]):
     @classmethod
     def learn(
             cls,
-            base_term: Callable[[_H_contra], Any],
-            correction_term_sum: (
+            base_term_function: Callable[[_H_contra], Any],
+            correction_term_sum_function: (
                 Callable[[Callable[[_H_contra], Any], _H_contra], Any]
             ),
             feature_extractor: Callable[[_H_contra], Any],
@@ -117,21 +117,27 @@ class LinearValueFunction(ValueFunction[_H_contra]):
         for the case of linear value functions in n-player, zero-sum
         games, the zero-sum option must be activated.
 
-        :param base_term: The base term function.
-        :param correction_term_sum: The correction term function.
+        :param base_term_function: The base term function.
+        :param correction_term_sum_function: The correction term
+                                             function.
         :param feature_extractor: The feature extractor function.
         :param terminal_histories: The terminal histories to learn from.
-        :param zero_sum: ``True`` to enable the zero-sum constraint, else
-                         ``False``. This is only relevant when value is a
-                         vector, not a scalar.
+        :param zero_sum: ``True`` to enable the zero-sum constraint,
+                         else ``False``. This is only relevant when
+                         value is a vector, not a scalar.
         :return: The solution to the value function for the linear case.
         """
         b = []
         A = []
 
         for terminal_history in terminal_histories:
-            b.append(base_term(terminal_history))
-            A.append(correction_term_sum(feature_extractor, terminal_history))
+            b.append(base_term_function(terminal_history))
+            A.append(
+                correction_term_sum_function(
+                    feature_extractor,
+                    terminal_history,
+                ),
+            )
 
         b_bar = np.mean(b, 0)
         A_bar = np.mean(A, 0)
