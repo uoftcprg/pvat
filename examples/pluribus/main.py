@@ -393,6 +393,7 @@ def load_hand_strengths(
         assert len(inputs) == len(outputs)
 
     hand_strengths = dict(zip(inputs, outputs))
+    hand_strengths[frozenset(), frozenset()] = 0
 
     return hand_strengths
 
@@ -406,39 +407,40 @@ def extract_features(
     hand_history = hand_histories[i]
     statuses = hand_history.user_defined_fields['_statuses'][j]
     pot = hand_history.user_defined_fields['_pots'][j]
-    actions = hand_history.user_defined_fields['_actions'].copy()
+    actions = hand_history.user_defined_fields['_actions']
 
     assert j < len(actions)
     assert k
 
-    actions[j] = k
     hole_cards = [set[Card]() for _ in range(6)]
     board_cards = set()
 
-    for a, action in enumerate(actions[:max(6, j + 1)]):
+    for a, action in enumerate(actions[:j] + [k]):
         if a < 6:
             hole_cards[a].update(action)
         else:
             board_cards.update(action)
 
-    features = np.empty(6)
+    hand_strength_features = np.empty(6)
 
     for n in range(6):
-        features[n] = (
+        hand_strength_features[n] = (
             hand_strengths[frozenset(board_cards), frozenset(hole_cards[n])]
         )
 
-    features **= statuses.sum()
+    hand_strength_features **= statuses.sum()
+    hand_strength_features *= pot
     features = np.hstack(
         (
-            features,
-            statuses * features,
-            (1 - statuses) * features,
+            hand_strength_features,
+            statuses * hand_strength_features,
+            (1 - statuses) * hand_strength_features,
         ),
     )
-    features *= pot
+    full_features = np.zeros((9, 18))
+    full_features[j] = features
 
-    return features
+    return full_features.ravel()
 
 
 def learn_linear_value_function(
