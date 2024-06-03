@@ -424,20 +424,22 @@ def extract_features(
     hand_strength_features = np.empty(6)
 
     for n in range(6):
-        hand_strength_features[n] = (
-            hand_strengths[frozenset(board_cards), frozenset(hole_cards[n])]
+        hand_strength_features[n] = hand_strengths.get(
+            (frozenset(board_cards), frozenset(hole_cards[n])),
+            0,
         )
 
     hand_strength_features **= statuses.sum()
-    hand_strength_features *= pot
     features = np.hstack(
         (
             hand_strength_features,
             statuses * hand_strength_features,
             (1 - statuses) * hand_strength_features,
+            1,
         ),
     )
-    full_features = np.zeros((9, 18))
+    features *= pot
+    full_features = np.zeros((9, 19))
     full_features[j] = features
 
     return full_features.ravel()
