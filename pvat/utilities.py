@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from itertools import starmap
 from typing import Any, Protocol, TypeVar
 
-from numpy.linalg import inv
 import numpy as np
 
 _H = TypeVar('_H')
@@ -127,35 +125,34 @@ class LinearValueFunction(ValueFunction[_H_contra]):
                          value is a vector, not a scalar.
         :return: The solution to the value function for the linear case.
         """
-        b = []
-        A = []
+        b_t = []
+        A_t = []
 
         for terminal_history in terminal_histories:
-            b.append(base_term_function(terminal_history))
-            A.append(
+            b_t.append(base_term_function(terminal_history))
+            A_t.append(
                 correction_term_sum_function(
                     feature_extractor,
                     terminal_history,
                 ),
             )
 
-        b_bar = np.mean(b, 0)
-        A_bar = np.mean(A, 0)
-
-        A_t_A_t_T_mean = np.mean(tuple(starmap(np.outer, zip(A, A))), 0)
-        A_bar_A_bar_T = np.outer(A_bar, A_bar)
-
-        A_bar_b_bar_T = np.outer(A_bar, b_bar)
-        A_t_b_t_T_mean = np.mean(tuple(starmap(np.outer, zip(A, b))), 0)
-
-        parameters = (
-            inv(A_t_A_t_T_mean - A_bar_A_bar_T)
-            @ (A_bar_b_bar_T - A_t_b_t_T_mean)
-        )
+        b_bar = np.mean(b_t, 0)
+        A_bar = np.mean(A_t, 0)
+        b = np.subtract(b_bar, b_t)
+        A = np.subtract(A_t, A_bar)
 
         if zero_sum:
             player_count = len(b_bar)
-            parameters @= np.eye(player_count) - 1 / player_count
+            S = np.column_stack(
+                (np.eye(player_count - 1), -np.ones(player_count - 1)),
+            )
+            b = b @ S.T @ np.linalg.inv(S @ S.T)
+
+        parameters = np.linalg.lstsq(A, b)[0]
+
+        if zero_sum:
+            parameters = parameters @ S
 
         return LinearValueFunction(feature_extractor, parameters)
 
