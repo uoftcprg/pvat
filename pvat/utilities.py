@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from functools import partial, singledispatchmethod
 from typing import Any, Protocol, TypeVar
 
 import numpy as np
@@ -77,7 +78,7 @@ class ValueFunction(Protocol[_H_contra]):
 
 
 @dataclass
-class LinearValueFunction(ValueFunction[_H_contra]):
+class LinearValueFunction(ValueFunction[_H]):
     """A protocol for a linear value function for history-actions.
 
     :param feature_extractor: The function that maps histories to a
@@ -85,22 +86,48 @@ class LinearValueFunction(ValueFunction[_H_contra]):
     :param parameters: The parameters of the linear value function.
     """
 
-    feature_extractor: Callable[[_H_contra], Any]
+    feature_extractor: Callable[[_H], Any]
     """The function that maps histories to a vector of features."""
     parameters: Any
     """The parameters of the linear value function."""
 
     @classmethod
+    def optimize_method(
+            cls,
+            method: Callable[[Any, ValueFunction[_H], _H], Any],
+    ) -> Callable[[Any, ValueFunction[_H], _H], Any]:
+        optimized_method = singledispatchmethod(method)
+
+        @optimized_method.register(LinearValueFunction)
+        def _(
+                self: Any,
+                value_function: LinearValueFunction[_H],
+                terminal_history: _H,
+        ) -> Any:
+            value_function = replace(
+                value_function,
+                feature_extractor=partial(
+                    method,
+                    self,
+                    value_function.feature_extractor,
+                ),
+            )
+
+            return value_function(terminal_history)
+
+        return optimized_method  # type: ignore[return-value]
+
+    @classmethod
     def learn(
             cls,
-            base_term_function: Callable[[_H_contra], Any],
+            base_term_function: Callable[[_H], Any],
             correction_term_sum_function: (
-                Callable[[Callable[[_H_contra], Any], _H_contra], Any]
+                Callable[[Callable[[_H], Any], _H], Any]
             ),
-            feature_extractor: Callable[[_H_contra], Any],
-            terminal_histories: Iterable[_H_contra],
+            feature_extractor: Callable[[_H], Any],
+            terminal_histories: Iterable[_H],
             zero_sum: bool = False,
-    ) -> LinearValueFunction[_H_contra]:
+    ) -> LinearValueFunction[_H]:
         """Solve the value estimator for the linear case.
 
         In two-player, zero-sum games, it is sufficient to learn just a
@@ -156,7 +183,7 @@ class LinearValueFunction(ValueFunction[_H_contra]):
 
         return LinearValueFunction(feature_extractor, parameters)
 
-    def __call__(self, terminal_history: _H_contra) -> Any:
+    def __call__(self, terminal_history: _H) -> Any:
         return self.parameters.T @ self.feature_extractor(terminal_history)
 
 
@@ -182,4 +209,4 @@ def weighted_average_map(
     weights = tuple(map(weight, values))
     mapped_values = tuple(map(value, values))
 
-    return np.average(mapped_values, axis=0, weights=weights)
+    return np.average(mapped_values, 0, weights)

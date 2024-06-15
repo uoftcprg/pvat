@@ -14,8 +14,8 @@ The value estimators implemented in PVAT are as follows:
 
 from abc import ABC, abstractmethod
 from collections.abc import Container, Iterable, Iterator
-from dataclasses import replace
-from functools import partial, singledispatchmethod
+from dataclasses import dataclass, field
+from functools import partial
 from itertools import product, starmap
 from typing import Any, Generic, TypeVar
 
@@ -39,16 +39,14 @@ _A = TypeVar('_A')
 _P = TypeVar('_P')
 
 
+@dataclass
 class ValueEstimator(ABC):
-    """An abstract base class for value estimators.
-
-    When invoked with a terminal history, an unbiased value estimate of
-    the terminal history is calculated.
-    """
+    """An abstract base class for value estimators."""
 
     pass
 
 
+@dataclass
 class ImportanceSampling(ValueEstimator, Generic[_H]):
     """A class for value estimators with importance sampling.
 
@@ -63,22 +61,12 @@ class ImportanceSampling(ValueEstimator, Generic[_H]):
                                           function.
     """
 
-    def __init__(
-            self,
-            terminal_value_function: TerminalValueFunction[_H],
-            mapped_terminal_histories_function: (
-                MappedTerminalHistoriesFunction[_H]
-            ),
-            terminal_probability_function: TerminalProbabilityFunction[_H],
-    ):
-        self.terminal_value_function = terminal_value_function
-        """The terminal value function."""
-        self.mapped_terminal_histories_function = (
-            mapped_terminal_histories_function
-        )
-        """The mapped terminal histories function."""
-        self.terminal_probability_function = terminal_probability_function
-        """The terminal probability function."""
+    terminal_value_function: TerminalValueFunction[_H]
+    """The terminal value function."""
+    mapped_terminal_histories_function: MappedTerminalHistoriesFunction[_H]
+    """The mapped terminal histories function."""
+    terminal_probability_function: TerminalProbabilityFunction[_H]
+    """The terminal probability function."""
 
     def __call__(self, terminal_history: _H) -> Any:
         return weighted_average_map(
@@ -88,7 +76,51 @@ class ImportanceSampling(ValueEstimator, Generic[_H]):
         )
 
 
-class AdvantageSum(ValueEstimator, Generic[_H, _A], ABC):
+@dataclass
+class ValueFunctionEstimator(ValueEstimator, Generic[_H], ABC):
+    """An abstract base class for value estimators that uses value
+    functions.
+
+    When invoked with a value function and a terminal history, an
+    unbiased value estimate of the terminal history is calculated.
+    """
+
+    def __call__(
+            self,
+            value_function: ValueFunction[_H],
+            terminal_history: _H,
+    ) -> Any:
+        return (
+            self.get_base_term(terminal_history)
+            + self.get_correction_term_sum(value_function, terminal_history)
+        )
+
+    @abstractmethod
+    def get_base_term(self, terminal_history: _H) -> Any:
+        """Calculate the base term.
+
+        :param terminal: The terminal history.
+        :return: The base term.
+        """
+        pass
+
+    @abstractmethod
+    def get_correction_term_sum(
+            self,
+            value_function: ValueFunction[_H],
+            terminal_history: _H,
+    ) -> Any:
+        """Calculate the sum of the correction terms.
+
+        :param value_function: The value estimator used.
+        :param terminal: The terminal history.
+        :return: The sum of the correction terms.
+        """
+        pass
+
+
+@dataclass
+class AdvantageSum(ValueFunctionEstimator[_H], Generic[_H, _A], ABC):
     """An abstract base class for value estimators with advantage sum.
 
     When invoked with a value function and a terminal history, an
@@ -101,55 +133,24 @@ class AdvantageSum(ValueEstimator, Generic[_H, _A], ABC):
     :param made_function: The made_function function.
     """
 
-    def __init__(
-            self,
-            terminal_value_function: TerminalValueFunction[_H],
-            actions_function: ActionsFunction[_H, _A],
-            probability_function: ProbabilityFunction[_H],
-            made_function: MadeFunction[_H, _A],
-    ) -> None:
-        self.terminal_value_function = terminal_value_function
-        """The terminal value function."""
-        self.actions_function = actions_function
-        """The actions_function function."""
-        self.probability_function = probability_function
-        """The probability function."""
-        self.made_function = made_function
-        """The made_function function."""
-
-    def __call__(
-            self,
-            value_function: ValueFunction[_H],
-            terminal_history: _H,
-    ) -> Any:
-        return (
-            self.get_base_term(terminal_history)
-            + self.get_correction_term_sum(value_function, terminal_history)
-        )
+    terminal_value_function: TerminalValueFunction[_H]
+    """The terminal value function."""
+    actions_function: ActionsFunction[_H, _A]
+    """The actions_function function."""
+    probability_function: ProbabilityFunction[_H]
+    """The probability function."""
+    made_function: MadeFunction[_H, _A]
+    """The made_function function."""
 
     def get_base_term(self, terminal_history: _H) -> Any:
-        """Calculate the base term.
-
-        :param terminal: The terminal history.
-        :return: The base term.
-        """
         return self.terminal_value_function(terminal_history)
 
-    @singledispatchmethod
+    @LinearValueFunction.optimize_method
     def get_correction_term_sum(
             self,
             value_function: ValueFunction[_H],
             terminal_history: _H,
     ) -> Any:
-        """Calculate the sum of the correction terms.
-
-        If the value function is a :class:`LinearValueFunction`, an
-        optimization operation is carried out.
-
-        :param value_function: The value estimator used.
-        :param terminal: The terminal history.
-        :return: The sum of the correction terms.
-        """
         correction_term_sum = 0
 
         for history, action in self.get_corrected_prefixes(terminal_history):
@@ -167,22 +168,6 @@ class AdvantageSum(ValueEstimator, Generic[_H, _A], ABC):
 
         return correction_term_sum
 
-    @get_correction_term_sum.register(LinearValueFunction)
-    def _(
-            self,
-            value_function: LinearValueFunction[_H],
-            terminal_history: _H,
-    ) -> Any:
-        value_function = replace(
-            value_function,
-            feature_extractor=partial(
-                self.get_correction_term_sum,
-                value_function.feature_extractor,
-            ),
-        )
-
-        return value_function(terminal_history)
-
     @abstractmethod
     def get_corrected_prefixes(
             self,
@@ -198,6 +183,7 @@ class AdvantageSum(ValueEstimator, Generic[_H, _A], ABC):
         pass
 
 
+@dataclass
 class DIVAT(AdvantageSum[_H, _A], Generic[_H, _A, _P]):
     """A class for value estimators with DIVAT.
 
@@ -215,29 +201,12 @@ class DIVAT(AdvantageSum[_H, _A], Generic[_H, _A, _P]):
     :param corrected_players: The corrected players function.
     """
 
-    def __init__(
-            self,
-            terminal_value_function: TerminalValueFunction[_H],
-            actions_function: ActionsFunction[_H, _A],
-            probability_function: ProbabilityFunction[_H],
-            made_function: MadeFunction[_H, _A],
-            prefixes_function: PrefixesFunction[_H, _A],
-            player_function: PlayerFunction[_H, _P],
-            corrected_players: Container[_P],
-    ):
-        super().__init__(
-            terminal_value_function,
-            actions_function,
-            probability_function,
-            made_function,
-        )
-
-        self.prefixes_function = prefixes_function
-        """The prefixes function."""
-        self.player_function = player_function
-        """The player function."""
-        self.corrected_players = corrected_players
-        """The corrected players function."""
+    prefixes_function: PrefixesFunction[_H, _A]
+    """The prefixes function."""
+    player_function: PlayerFunction[_H, _P]
+    """The player function."""
+    corrected_players: Container[_P]
+    """The corrected players function."""
 
     def get_corrected_prefixes(
             self,
@@ -260,6 +229,7 @@ class DIVAT(AdvantageSum[_H, _A], Generic[_H, _A, _P]):
                 yield history, action
 
 
+@dataclass
 class MIVAT(AdvantageSum[_H, _A], Generic[_H, _A, _P]):
     """A class for value estimators with MIVAT.
 
@@ -276,29 +246,12 @@ class MIVAT(AdvantageSum[_H, _A], Generic[_H, _A, _P]):
     :param chance: The chance (or nature).
     """
 
-    def __init__(
-            self,
-            terminal_value_function: TerminalValueFunction[_H],
-            actions_function: ActionsFunction[_H, _A],
-            probability_function: ProbabilityFunction[_H],
-            made_function: MadeFunction[_H, _A],
-            prefixes_function: PrefixesFunction[_H, _A],
-            player_function: PlayerFunction[_H, _P],
-            chance: _P,
-    ):
-        super().__init__(
-            terminal_value_function,
-            actions_function,
-            probability_function,
-            made_function,
-        )
-
-        self.prefixes_function = prefixes_function
-        """The prefixes function."""
-        self.player_function = player_function
-        """The player function."""
-        self.chance = chance
-        """The chance (or nature)."""
+    prefixes_function: PrefixesFunction[_H, _A]
+    """The prefixes function."""
+    player_function: PlayerFunction[_H, _P]
+    """The player function."""
+    chance: _P
+    """The chance (or nature)."""
 
     def get_corrected_prefixes(
             self,
@@ -320,7 +273,8 @@ class MIVAT(AdvantageSum[_H, _A], Generic[_H, _A, _P]):
                 yield history, action
 
 
-class AIVAT(ValueEstimator, Generic[_H, _A, _P]):
+@dataclass
+class AIVAT(ValueFunctionEstimator[_H], Generic[_H, _A, _P]):
     """A class for value estimators with AIVAT.
 
     When invoked with a value function and a terminal history, an
@@ -341,117 +295,79 @@ class AIVAT(ValueEstimator, Generic[_H, _A, _P]):
     :param mapped_histories_function: The mapped histories function.
     """
 
-    def __init__(
-            self,
-            terminal_value_function: TerminalValueFunction[_H],
-            mapped_terminal_histories_function: (
-                MappedTerminalHistoriesFunction[_H]
-            ),
-            terminal_probability_function: TerminalProbabilityFunction[_H],
-            actions_function: ActionsFunction[_H, _A],
-            probability_function: ProbabilityFunction[_H],
-            made_function: MadeFunction[_H, _A],
-            prefixes_function: PrefixesFunction[_H, _A],
-            player_function: PlayerFunction[_H, _P],
-            corrected_players: Container[_P],
-            mapped_histories_function: MappedHistoriesFunction[_H],
-    ):
-        self.importance_sampling = ImportanceSampling(
-            terminal_value_function,
-            mapped_terminal_histories_function,
-            terminal_probability_function,
-        )
-        """The importance sampling value estimator."""
-        self.divat = DIVAT(
-            terminal_value_function,
-            actions_function,
-            probability_function,
-            made_function,
-            prefixes_function,
-            player_function,
-            corrected_players,
-        )
-        """The DIVAT value estimator."""
-        self.mapped_histories_function = mapped_histories_function
-        """The mapped histories function."""
+    terminal_value_function: TerminalValueFunction[_H]
+    """The terminal value function."""
+    mapped_terminal_histories_function: MappedTerminalHistoriesFunction[_H]
+    """The mapped terminal histories function."""
+    terminal_probability_function: TerminalProbabilityFunction[_H]
+    """The terminal probability function."""
+    actions_function: ActionsFunction[_H, _A]
+    """The actions_function function."""
+    probability_function: ProbabilityFunction[_H]
+    """The probability function."""
+    made_function: MadeFunction[_H, _A]
+    """The made_function function."""
+    prefixes_function: PrefixesFunction[_H, _A]
+    """The prefixes function."""
+    player_function: PlayerFunction[_H, _P]
+    """The player function."""
+    corrected_players: Container[_P]
+    """The corrected players function."""
+    mapped_histories_function: MappedHistoriesFunction[_H]
+    """The mapped histories function."""
+    _importance_sampling: ImportanceSampling[_H] = field(init=False)
+    _divat: DIVAT[_H, _A, _P] = field(init=False)
 
-    def __call__(
-            self,
-            value_function: ValueFunction[_H],
-            terminal_history: _H,
-    ) -> Any:
-        return (
-            self.get_base_term(terminal_history)
-            + self.get_correction_term_sum(value_function, terminal_history)
+    def __post_init__(self) -> None:
+        self._importance_sampling = ImportanceSampling(
+            self.terminal_value_function,
+            self.mapped_terminal_histories_function,
+            self.terminal_probability_function,
+        )
+        self._divat = DIVAT(
+            self.terminal_value_function,
+            self.actions_function,
+            self.probability_function,
+            self.made_function,
+            self.prefixes_function,
+            self.player_function,
+            self.corrected_players,
         )
 
     def get_base_term(self, terminal_history: _H) -> Any:
-        """Calculate the base term.
+        return self._importance_sampling(terminal_history)
 
-        :param terminal: The terminal history.
-        :return: The base term.
-        """
-        return self.importance_sampling(terminal_history)
-
-    @singledispatchmethod
+    @LinearValueFunction.optimize_method
     def get_correction_term_sum(
             self,
             value_function: ValueFunction[_H],
             terminal_history: _H,
     ) -> Any:
-        """Calculate the sum of the correction terms.
-
-        If the value function is a :class:`LinearValueFunction`, an
-        optimization operation is carried out.
-
-        :param value_function: The value estimator used.
-        :param terminal: The terminal history.
-        :return: The sum of the correction terms.
-        """
         correction_term_sum = 0
 
-        for history, action in self.divat.get_corrected_prefixes(
+        for history, action in self._divat.get_corrected_prefixes(
                 terminal_history,
         ):
             correction_term_sum += (
                 weighted_average_map(
-                    self.divat.probability_function,
+                    self.probability_function,
                     value_function,
                     starmap(
-                        self.divat.made_function,
+                        self.made_function,
                         product(
                             self.mapped_histories_function(history),
-                            self.divat.actions_function(history),
+                            self.actions_function(history),
                         ),
                     ),
                 )
                 - weighted_average_map(
-                    self.divat.probability_function,
+                    self.probability_function,
                     value_function,
                     map(
-                        lambda history: self.divat.made_function(
-                            history,
-                            action,
-                        ),
+                        lambda history: self.made_function(history, action),
                         self.mapped_histories_function(history),
                     ),
                 )
             )
 
         return correction_term_sum
-
-    @get_correction_term_sum.register(LinearValueFunction)
-    def _(
-            self,
-            value_function: LinearValueFunction[_H],
-            terminal_history: _H,
-    ) -> Any:
-        value_function = replace(
-            value_function,
-            feature_extractor=partial(
-                self.get_correction_term_sum,
-                value_function.feature_extractor,
-            ),
-        )
-
-        return value_function(terminal_history)
