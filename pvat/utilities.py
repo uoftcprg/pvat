@@ -96,6 +96,16 @@ class LinearValueFunction(ValueFunction[_H]):
             cls,
             method: Callable[[Any, ValueFunction[_H], _H], Any],
     ) -> Callable[[Any, ValueFunction[_H], _H], Any]:
+        """Optimize a linear method that accepts a value function as the
+        first non-self argument.
+
+        The method must be a linear function. The optimized method will
+        perform an optimized computation when called with a linear value
+        function.
+
+        :param method: The linear method to be optimzied.
+        :return: The optimized method.
+        """
         optimized_method = singledispatchmethod(method)
 
         @optimized_method.register(LinearValueFunction)
